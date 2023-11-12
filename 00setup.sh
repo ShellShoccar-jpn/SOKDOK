@@ -30,7 +30,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/}
-	Version : 2023-11-12 00:09:21 JST
+	Version : 2023-11-12 20:02:12 JST
 	USAGE
   exit 1
 }
@@ -55,7 +55,7 @@ case "$#" in 0) :;; *) print_usage_and_exit;; esac
 # Main
 ######################################################################
 
-"$Homedir/lib/c_src/MAKE.sh" || error_exit 1 'Failed to setup'
+"$Homedir/lib/c_src/MAKE.sh" -u || error_exit 1 'Failed to setup'
 
 
 ######################################################################
