@@ -2,16 +2,16 @@
 
 ######################################################################
 #
-# CENTER.SH : SOKDOK Viewer (Center Version)
+# ELUSIVE.SH : SOKDOK Viewer (Elusive Version)
 #
-# This program shows the text data by every phrase on the center of
-# the screen (terminal.) at the specified speed.
-# You can experience the feeling of speed-readers because you don't
-# have to move your eyes when you read them. It's said that eye-moving
-# costs pretty heavily for text reading.
+# This program shows the text data by every phrase somewhere on the
+# screen (terminal.) at the specified speed.
+# You can experience the feeling when you see a terrablly unreadable
+# program having a lot of loops, branches, and subroutines.
+# It is said that eye-moving costs pretty heavily for text reading.
 #
 #
-# Usage     : center.sh letters_per_minute [textfile]
+# Usage     : elusive.sh letters_per_minute [textfile]
 # Arguments : letters_per_minute
 #               * Speed on the screen in letters per minute
 #               * 800 is the moderate speed for ordinal people.
@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-11-14 18:37:23 JST
+	Version : 2023-11-12 00:25:55 JST
 	USAGE
   exit 1
 }
@@ -95,38 +95,54 @@ printf '%s\n' "$lpm" | grep -Eq '^[0-9]+$' || {
 ######################################################################
 
 # === Get center position ============================================
-X_mid=$(($(tput cols  2>/dev/null)/2))
-Y_mid=$(($(tput lines 2>/dev/null)/2))
-case "$X_mid" in '') X_mid=0;; esac
-case "$Y_mid" in '') Y_mid=0;; esac
+X_max=$(($(tput cols  2>/dev/null)  ))
+Y_max=$(($(tput lines 2>/dev/null)-1))
+case "$X_max" in '') X_max=80;; esac
+case "$Y_max" in '') Y_max=24;; esac
 
 # === Flash ==========================================================
 clear
-cat $file                                                         |
+cat /dev/urandom |
+od -A n -t u4    |
+awk -v xm=$X_max -v ym=$Y_max '                                   #
+  {                                                               #
+    print int($1/4294967296*xm)+1,int($2/4294967296*ym)+1;        #
+  }'                                                              |
+# 1:random-x-position 2:random-y-position                         #
+awk -v file="$file" '                                             #
+  {                                                               #
+    if (! getline line < file) {exit 0;}                          #
+    print $1,$2,line;                                             #
+  }'                                                              |
+# 1:random-x-position 2:random-y-position 3:body                  #
 utf8wc -lv                                                        |
-# 1:bytes 2:leters 3:length 4:body                                #
+# 1:bytes(includes fld.4-5) 2:leters(includes fld.4-5)            #
+# 3:length(includes fld.4-5) 4:rx 5:ry 6:body                     #
+awk '                                                             #
+  NF>=6{                                                          #
+    match($0,/^[^ ]+ [^ ]+ [^ ]+ /            ); l1=RLENGTH;      #
+    match($0,/^[^ ]+ [^ ]+ [^ ]+ [^ ]+ [^ ]+ /); l2=RLENGTH;      #
+    l=l2-l1;                                                      #
+    print $1-l,$2-l,$3-l,substr($0,l1+1)                          #
+  }'                                                              |
+# 1:bytes(fld.6) 2:leters(fld.6) 3:length(fld.6) 4:rx 5:ry 6:body #
 awk -v lpm=$lpm '                                                 #
   BEGIN {OFMT="%.14g"; ts=0;}                                     #
   {print ts,$3,substr($0,length($1 $2 $3)+4); ts+=($2)*60/lpm;} ' |
-# 1:time 2:length 3:body                                          #
+# 1:time 2:length 3:rx 4:ry 5:body                                #
 tscat -zZ                                                         |
-# 1:length 2:body                                                 #
-ptw awk -v xm=$X_mid -v ym=$Y_mid '
+# 1:length 2:rx 3:ry 4:body                                       #
+ptw awk '                                                         #
   BEGIN {
-    OFS=""; l0=0;
+    OFS=""; l0=0; x0=1; y0=1;
   }
   {
-    if (l0==0) {
-      s1 = "";
-    }
-    else       {
-      s  = sprintf("%" l0 "s","");
-      s1 = sprintf("\033[%d;%dH%s",ym,int(xm-l0/2),s);
-    }
-    s = substr($0,length($1)+2);
-    s2 = sprintf("\033[%d;%dH%s",ym,int(xm-$1/2),s);
+    s  = sprintf("%" l0+1 "s","");
+    s1 = sprintf("\033[%d;%dH%s",y0,x0,s);
+    s  = substr($0,length($1 $2 $3)+4);
+    s2 = sprintf("\033[%d;%dH%s",$3,$2,s);
     print s1,s2;
-    l0 = $1;
+    l0=$1; x0=$2; y0=$3;
   }'
 
 

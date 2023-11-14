@@ -17,16 +17,26 @@ $ ./viewers/center.sh 2000 sampletexts/sfnovel_intro2.ja.txt
 ```
 The above first argument "2000" means the speed of 2000 letters per minute. It is a speed for speed-readers.
 
+Next, try the elusive reader, like this.
+
+```
+$ ./viewers/center.sh 2000 sampletexts/sfnovel_intro2.ja.txt
+```
+
+Were you able to read that smoothly? I know you couldn't. That is because you have to move your eyeballs violently while reading. That's a very stressful work.
+
 ## List of Files
 
 ```
 ./ --+-- README.md                          This file
      |                                      
      +-- 00setup.sh                         Setup script (Run this 1st!)
-     |                                     
+     |                                      
      +-- viewers/                           SOKDOK Viewers Directory
      |   |                                  
-     |   `---------- center.sh              Center version
+     |   +---------- center.sh              Center version (Easist to read)
+     |   |                                  
+     |   `---------- elusive.sh             Elusive version (Hardest to read)
      |                                      
      +-- lib/                               Library Directory for the Viewers
      |   |                                  
