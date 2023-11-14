@@ -20,7 +20,7 @@ The above first argument "2000" means the speed of 2000 letters per minute. It i
 Next, try the elusive reader, like this.
 
 ```
-$ ./viewers/center.sh 2000 sampletexts/sfnovel_intro2.ja.txt
+$ ./viewers/elusive.sh 2000 sampletexts/sfnovel_intro2.ja.txt
 ```
 
 Were you able to read that smoothly? I know you couldn't. That is because you have to move your eyeballs violently while reading. That's a very stressful work.
