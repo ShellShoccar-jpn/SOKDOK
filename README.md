@@ -17,13 +17,14 @@ $ ./viewers/center.sh 2000 sampletexts/sfnovel_intro2.ja.txt
 ```
 The above first argument "2000" means the speed of 2000 letters per minute. It is a speed for speed-readers.
 
-Next, try the elusive reader, like this.
+Next, try the "serial" and "elusive" reader, like this.
 
 ```
+$ ./viewers/serial.sh 2000 sampletexts/sfnovel_intro2.ja.txt
 $ ./viewers/elusive.sh 2000 sampletexts/sfnovel_intro2.ja.txt
 ```
 
-Were you able to read that smoothly? I know you couldn't. That is because you have to move your eyeballs violently while reading. That's a very stressful work.
+Were you able to read that smoothly? I know you couldn't. That is because you must move your eyeballs violently while reading, particularly while using the elusive reader. That's a very stressful work.
 
 ## List of Files
 
