@@ -36,6 +36,8 @@ Were you able to read that smoothly? I know you couldn't. That is because you ha
      |   |                                  
      |   +---------- center.sh              Center version (Easist to read)
      |   |                                  
+     |   +---------- serial.sh              Serial version (Equal to reading ordinary documents)
+     |   |                                  
      |   `---------- elusive.sh             Elusive version (Hardest to read)
      |                                      
      +-- lib/                               Library Directory for the Viewers

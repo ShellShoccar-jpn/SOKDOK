@@ -2,16 +2,18 @@
 
 ######################################################################
 #
-# CENTER.SH : SOKDOK Viewer (Center Version)
+# SERIAL.SH : SOKDOK Viewer (Serial Version)
 #
-# This program shows the text data by every phrase on the center of
-# the screen (terminal.) at the specified speed.
-# You can experience the feeling of speed-readers because you don't
-# have to move your eyes when you read them. It's said that eye-moving
-# costs pretty heavily for text reading.
+# This program shows the text data by every phrase from the top-left
+# to the bottom-right on the screen (terminal.) at the specified speed.
+# You can experience that you can't read the text as fast as the "center.sh"
+# viewer. That is because this viewer needs you to move your eyes as
+# well as reading ordinal documents, whereas the "center.sh" doesn't
+# need you to move your eyes at all. This viewer is made for a control
+# experiment.
 #
 #
-# Usage     : center.sh letters_per_minute [textfile]
+# Usage     : serial.sh letters_per_minute [textfile]
 # Arguments : letters_per_minute
 #               * Speed on the screen in letters per minute
 #               * 800 is the moderate speed for ordinal people.
@@ -46,7 +48,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-11-24 17:57:26 JST
+	Version : 2023-11-24 17:55:39 JST
 	USAGE
   exit 1
 }
@@ -95,10 +97,10 @@ printf '%s\n' "$lpm" | grep -Eq '^[0-9]+$' || {
 ######################################################################
 
 # === Get center position ============================================
-X_mid=$(($(tput cols  2>/dev/null)/2))
-Y_mid=$(($(tput lines 2>/dev/null)/2))
-case "$X_mid" in '') X_mid=0;; esac
-case "$Y_mid" in '') Y_mid=0;; esac
+X_max=$(($(tput cols  2>/dev/null)  ))
+Y_max=$(($(tput lines 2>/dev/null)-1))
+case "$X_max" in '') X_max=0;; esac
+case "$Y_max" in '') Y_max=0;; esac
 
 # === Flash ==========================================================
 clear
@@ -111,22 +113,26 @@ awk -v lpm=$lpm '                                                 #
 # 1:time 2:length 3:body                                          #
 tscat -zZ                                                         |
 # 1:length 2:body                                                 #
-ptw awk -v xm=$X_mid -v ym=$Y_mid '                               #
+ptw awk -v xm=$X_max -v ym=$Y_max '                               #
   BEGIN {                                                         #
-    OFS=""; l0=0;                                                 #
+    OFS=""; l0=0; x0=1; y0=1;                                     #
   }                                                               #
   {                                                               #
-    if (l0==0) {                                                  #
-      s1 = "";                                                    #
+    s  = sprintf("%" l0+1 "s","");                                #
+    s1 = sprintf("\033[%d;%dH%s",y0,x0,s);                        #
+    s  = substr($0,length($1)+2);                                 #
+    if ($1>0) {                                                   #
+      x=x0+l0; y=y0;                                              #
+      if (x>xm) {x=x%xm; y++;}                                    #
+      if (y>ym) {        y=1;}                                    #
+    } else    {                                                   #
+      # If a blank line comes, break the line on the screen.      #
+      x=1    ; y++ ;                                              #
+      if (y>ym) {        y=1;}                                    #
     }                                                             #
-    else       {                                                  #
-      s  = sprintf("%" l0 "s","");                                #
-      s1 = sprintf("\033[%d;%dH%s",ym,int(xm-l0/2),s);            #
-    }                                                             #
-    s = substr($0,length($1)+2);                                  #
-    s2 = sprintf("\033[%d;%dH%s",ym,int(xm-$1/2),s);              #
+    s2 = sprintf("\033[%d;%dH%s",y,x,s);                          #
     print s1,s2;                                                  #
-    l0 = $1;                                                      #
+    l0=$1; x0=x; y0=y;                                            #
   }'
 
 

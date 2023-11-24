@@ -26,7 +26,7 @@
 #               * If you omit this argument, the standard input will be
 #                  regarded as the text file to be read.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2023-11-14
+# Written by @colrichie (Shellshoccar Japan) on 2023-11-24
 #
 ######################################################################
 
@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-11-12 00:25:55 JST
+	Version : 2023-11-24 17:56:50 JST
 	USAGE
   exit 1
 }
@@ -133,16 +133,16 @@ awk -v lpm=$lpm '                                                 #
 tscat -zZ                                                         |
 # 1:length 2:rx 3:ry 4:body                                       #
 ptw awk '                                                         #
-  BEGIN {
-    OFS=""; l0=0; x0=1; y0=1;
-  }
-  {
-    s  = sprintf("%" l0+1 "s","");
-    s1 = sprintf("\033[%d;%dH%s",y0,x0,s);
-    s  = substr($0,length($1 $2 $3)+4);
-    s2 = sprintf("\033[%d;%dH%s",$3,$2,s);
-    print s1,s2;
-    l0=$1; x0=$2; y0=$3;
+  BEGIN {                                                         #
+    OFS=""; l0=0; x0=1; y0=1;                                     #
+  }                                                               #
+  {                                                               #
+    s  = sprintf("%" l0+1 "s","");                                #
+    s1 = sprintf("\033[%d;%dH%s",y0,x0,s);                        #
+    s  = substr($0,length($1 $2 $3)+4);                           #
+    s2 = sprintf("\033[%d;%dH%s",$3,$2,s);                        #
+    print s1,s2;                                                  #
+    l0=$1; x0=$2; y0=$3;                                          #
   }'
 
 
