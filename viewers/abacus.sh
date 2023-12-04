@@ -67,7 +67,7 @@ print_usage_and_exit() {
 	                        calculated
 	             * time   : Time taken to display all numbers in the second
 	Options  : -b ... Ring the bell when displaying numbers.
-	Version  : 2023-12-05 00:43:06 JST
+	Version  : 2023-12-05 01:27:00 JST
 	USAGE
   exit 1
 }
@@ -154,11 +154,15 @@ while :; do
 done
 
 # === Validate parameters ============================================
-([ $dig -gt 0 ] && [ $dig -le 10 ]) || {
+([ $dig -gt 0 ] && [ $dig -le 10 ])      || {
   error_exit 1 "$dig: \"dig\" parameter is out of range (1-10)"
 }
-[ $num -gt 0 ] || error_exit 1 "$num: \"num\" parameter must be above 0."
-[ $tim -gt 0 ] || error_exit 1 "$tim: \"tim\" parameter must be above 0."
+[ $num -gt 0 ]                           || {
+  error_exit 1 "$num: \"num\" parameter must be above 0."
+}
+awk -v tim=$tim 'BEGIN{exit tim>0?0:1;}' || {
+  error_exit 1 "$tim: \"tim\" parameter must be above 0."
+}
 
 
 ######################################################################
