@@ -26,7 +26,7 @@
 #               * If you omit this argument, the standard input will be
 #                  regarded as the text file to be read.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2023-11-24
+# Written by @colrichie (Shellshoccar Japan) on 2023-12-05
 #
 ######################################################################
 
@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-11-24 17:56:50 JST
+	Version : 2023-12-05 01:18:57 JST
 	USAGE
   exit 1
 }
@@ -96,9 +96,9 @@ printf '%s\n' "$lpm" | grep -Eq '^[0-9]+$' || {
 
 # === Get center position ============================================
 X_max=$(($(tput cols  2>/dev/null)  ))
-Y_max=$(($(tput lines 2>/dev/null)-1))
+Y_max=$(($(tput lines 2>/dev/null)-2))
 case "$X_max" in '') X_max=80;; esac
-case "$Y_max" in '') Y_max=24;; esac
+case "$Y_max" in '') Y_max=23;; esac
 
 # === Flash ==========================================================
 clear
