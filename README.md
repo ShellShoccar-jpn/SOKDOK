@@ -39,7 +39,9 @@ Were you able to read that smoothly? I know you couldn't. That is because you mu
      |   |                                  
      |   +---------- serial.sh              Serial version (Equal to reading ordinary documents)
      |   |                                  
-     |   `---------- elusive.sh             Elusive version (Hardest to read)
+     |   |---------- elusive.sh             Elusive version (Hardest to read)
+     |   |                                  
+     |   `---------- abacus.sh              Abacus Examiner (Bonus command)
      |                                      
      +-- lib/                               Library Directory for the Viewers
      |   |                                  
