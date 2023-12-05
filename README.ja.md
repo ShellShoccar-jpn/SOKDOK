@@ -2,7 +2,7 @@
 
 "SOKDOK"とは速読のことです。このアプリケーションを使えば、特に訓練をしていない人でも速読が体験できるとともに、通常の黙読でスピードを妨げている要素の一つが目線移動であることを実感できます。
 
-(English version is [here].(README.en.md))
+(English version is [here](README.en.md).)
 
 ## 使い方
 
