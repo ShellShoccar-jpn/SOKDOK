@@ -12,7 +12,7 @@ Before trying, run the set-up script.
 $ ./00setup.sh
 ```
 
-Then, try reading by the viewer, like this.
+Then, try reading with the viewer, like this.
 
 ```
 $ ./viewers/center.sh 2000 sampletexts/sfnovel_intro2.ja.txt
