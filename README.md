@@ -53,28 +53,28 @@ $ ./bonus/abacus.sh 1kyu
 ./ --+-- README.md                          "Readme" file (This file)
      +-- README.en.md                       "Readme" file (This file)
      +-- README.ja.md                       "Readme" file (Japanese version)
-     |                                      
+     |
      +-- 00setup.sh                         Setup script (Run this 1st!)
-     |                                      
+     |
      +-- viewers/                           SOKDOK Viewers Directory
-     |   |                                  
+     |   |
      |   +---------- center.sh              Center version (Easist to read)
-     |   |                                  
+     |   |
      |   +---------- serial.sh              Serial version (Equal to reading ordinary documents)
-     |   |                                  
+     |   |
      |   `---------- elusive.sh             Elusive version (Hardest to read)
-     |                                      
+     |
      +-- lib/                               Library Directory for the Viewers
-     |   |                                  
+     |   |
      |   +---------- utf8wc                 UTF-8 Text Length Counting Command
-     |   |                                  
+     |   |
      |   +---------- c_src/                 C Program File Directory
-     |               |                      
-     |               +---------- ptw        Pseudo Terminal Wrapper Command
-     |               `---------- tscat      Timestamp oriented Cat Commdna
-     |                                      
+     |               |
+     |               +---------- ptw.c      Pseudo Terminal Wrapper Command
+     |               `---------- tscat.c    Timestamp oriented Cat Commdna
+     |
      +-- sampletexts/                       Sample Text Directory
-     |   |                                  
+     |   |
      |   +---------- sfnovel_intro1.ja.txt  A SF novel (one-clause, in Japanese)
      |   +---------- sfnovel_intro2.ja.txt  A SF novel (short clause bunch, in Japanese)
      |   `---------- sfnovel_intro3.ja.txt  A SF novel (log clause bunch, in Japanese)
