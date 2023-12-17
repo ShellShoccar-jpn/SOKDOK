@@ -26,7 +26,7 @@
 #               * If you omit this argument, the standard input will be
 #                  regarded as the text file to be read.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2023-12-05
+# Written by @colrichie (Shellshoccar Japan) on 2023-12-17
 #
 ######################################################################
 
@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-12-05 01:18:57 JST
+	Version : 2023-12-17 20:07:17 JST
 	USAGE
   exit 1
 }
@@ -97,8 +97,8 @@ printf '%s\n' "$lpm" | grep -Eq '^[0-9]+$' || {
 # === Get center position ============================================
 X_max=$(($(tput cols  2>/dev/null)  ))
 Y_max=$(($(tput lines 2>/dev/null)-2))
-case "$X_max" in '') X_max=80;; esac
-case "$Y_max" in '') Y_max=23;; esac
+case "$X_max" in '') X_max=80;; esac # Assume the VT100's size (80*24)
+case "$Y_max" in '') Y_max=22;; esac # if tput cols/lines doesn't work.
 
 # === Flash ==========================================================
 clear

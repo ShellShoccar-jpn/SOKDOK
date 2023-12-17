@@ -99,8 +99,8 @@ printf '%s\n' "$lpm" | grep -Eq '^[0-9]+$' || {
 # === Get center position ============================================
 X_max=$(($(tput cols  2>/dev/null)  ))
 Y_max=$(($(tput lines 2>/dev/null)-1))
-case "$X_max" in '') X_max=0;; esac
-case "$Y_max" in '') Y_max=0;; esac
+case "$X_max" in '') X_max=80;; esac # Assume the VT100's size (80*24)
+case "$Y_max" in '') Y_max=23;; esac # if tput cols/lines doesn't work.
 
 # === Flash ==========================================================
 clear

@@ -28,7 +28,7 @@
 #              * time   : Time taken to display all numbers in the second
 # Options  : -b ... Ring the bell when displaying numbers.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2023-12-05
+# Written by @colrichie (Shellshoccar Japan) on 2023-12-17
 #
 ######################################################################
 
@@ -67,7 +67,7 @@ print_usage_and_exit() {
 	                        calculated
 	             * time   : Time taken to display all numbers in the second
 	Options  : -b ... Ring the bell when displaying numbers.
-	Version  : 2023-12-05 01:27:00 JST
+	Version  : 2023-12-17 20:08:48 JST
 	USAGE
   exit 1
 }
@@ -184,8 +184,8 @@ a=${s##*$LF}
 # === Get center position ============================================
 X_mid=$(($(tput cols  2>/dev/null)/2))
 Y_mid=$(($(tput lines 2>/dev/null)/2))
-case "$X_mid" in '') X_mid=40;; esac
-case "$Y_mid" in '') Y_mid=12;; esac
+case "$X_mid" in '') X_mid=40;; esac # Assume the VT100's size (80*24)
+case "$Y_mid" in '') Y_mid=12;; esac # if tput cols/lines doesn't work.
 
 # === Questioning ====================================================
 clear
