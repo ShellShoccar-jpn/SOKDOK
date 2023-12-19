@@ -70,6 +70,7 @@ $ ./bonus/abacus.sh 1kyu
      |   |
      |   +---------- c_src/                 C Program File Directory
      |               |
+     |               +---------- MAKE.sh    Script to compile the following two programs
      |               +---------- ptw.c      Pseudo Terminal Wrapper Command
      |               `---------- tscat.c    Timestamp oriented Cat Commdna
      |
