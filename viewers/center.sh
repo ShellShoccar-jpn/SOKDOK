@@ -26,7 +26,7 @@
 #               * If you omit this argument, the standard input will be
 #                  regarded as the text file to be read.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2023-12-17
+# Written by @colrichie (Shellshoccar Japan) on 2023-12-22
 #
 ######################################################################
 
@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-12-17 20:03:47 JST
+	Version : 2023-12-22 17:01:15 JST
 	USAGE
   exit 1
 }
@@ -60,9 +60,6 @@ Homedir=$(d=${0%/*}/; [ "_$d" = "_$0/" ] && d='./'; cd "$d.."; pwd)
 PATH="$Homedir/lib:$PATH"
 
 # === Confirm some required commands =================================
-type ptw   >/dev/null 2>&1 || {
-  error_exit 1 'ptw command is not found. Please run "00setup.sh" in advance.'
-}
 type tscat >/dev/null 2>&1 || {
   error_exit 1 'tscat command is not found. Please run "00setup.sh" in advance.'
 }
@@ -104,14 +101,14 @@ case "$Y_mid" in '') Y_mid=12;; esac # if tput cols/lines doesn't work.
 clear
 cat $file                                                         |
 utf8wc -lv                                                        |
-# 1:bytes 2:leters 3:length 4:body                                #
+# 1:bytes 2:letters 3:length 4:body                               #
 awk -v lpm=$lpm '                                                 #
   BEGIN {OFMT="%.14g"; ts=0;}                                     #
   {print ts,$3,substr($0,length($1 $2 $3)+4); ts+=($2)*60/lpm;} ' |
 # 1:time 2:length 3:body                                          #
 tscat -zZ                                                         |
 # 1:length 2:body                                                 #
-ptw awk -v xm=$X_mid -v ym=$Y_mid '                               #
+awk -v xm=$X_mid -v ym=$Y_mid '                                   #
   BEGIN {                                                         #
     OFS=""; l0=0;                                                 #
   }                                                               #

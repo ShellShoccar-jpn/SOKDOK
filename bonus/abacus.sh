@@ -28,7 +28,7 @@
 #              * time   : Time taken to display all numbers in the second
 # Options  : -b ... Ring the bell when displaying numbers.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2023-12-17
+# Written by @colrichie (Shellshoccar Japan) on 2023-12-22
 #
 ######################################################################
 
@@ -67,7 +67,7 @@ print_usage_and_exit() {
 	                        calculated
 	             * time   : Time taken to display all numbers in the second
 	Options  : -b ... Ring the bell when displaying numbers.
-	Version  : 2023-12-17 20:08:48 JST
+	Version  : 2023-12-22 17:03:24 JST
 	USAGE
   exit 1
 }
@@ -81,9 +81,6 @@ Homedir=$(d=${0%/*}/; [ "_$d" = "_$0/" ] && d='./'; cd "$d.."; pwd)
 PATH="$Homedir/lib:$PATH"
 
 # === Confirm some required commands =================================
-type ptw   >/dev/null 2>&1 || {
-  error_exit 1 'ptw command is not found. Please run "00setup.sh" in advance.'
-}
 type tscat >/dev/null 2>&1 || {
   error_exit 1 'tscat command is not found. Please run "00setup.sh" in advance.'
 }
@@ -201,7 +198,7 @@ awk -v num=$num -v tim=$tim '                          #
 # 1:timestamp 2:message                                #
 tscat -zZ                                              |
 # 1: message                                           #
-ptw awk -v bel=$bel -v xm=$X_mid -v ym=$Y_mid '        #
+awk -v bel=$bel -v xm=$X_mid -v ym=$Y_mid '            #
   BEGIN {                                              #
     OFS=""; l0=0;                                      #
   }                                                    #

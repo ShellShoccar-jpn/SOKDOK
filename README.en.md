@@ -71,7 +71,6 @@ $ ./bonus/abacus.sh 1kyu
      |   +---------- c_src/                 C Program File Directory
      |               |                      
      |               +---------- MAKE.sh    Script to compile the following two programs
-     |               +---------- ptw        Pseudo Terminal Wrapper Command
      |               `---------- tscat      Timestamp oriented Cat Commdna
      |                                      
      +-- sampletexts/                       Sample Text Directory

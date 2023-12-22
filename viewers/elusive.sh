@@ -26,7 +26,7 @@
 #               * If you omit this argument, the standard input will be
 #                  regarded as the text file to be read.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2023-12-17
+# Written by @colrichie (Shellshoccar Japan) on 2023-12-22
 #
 ######################################################################
 
@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-12-17 20:07:17 JST
+	Version : 2023-12-22 17:02:25 JST
 	USAGE
   exit 1
 }
@@ -60,9 +60,6 @@ Homedir=$(d=${0%/*}/; [ "_$d" = "_$0/" ] && d='./'; cd "$d.."; pwd)
 PATH="$Homedir/lib:$PATH"
 
 # === Confirm some required commands =================================
-type ptw   >/dev/null 2>&1 || {
-  error_exit 1 'ptw command is not found. Please run "00setup.sh" in advance.'
-}
 type tscat >/dev/null 2>&1 || {
   error_exit 1 'tscat command is not found. Please run "00setup.sh" in advance.'
 }
@@ -116,7 +113,7 @@ awk -v file="$file" '                                             #
   }'                                                              |
 # 1:random-x-position 2:random-y-position 3:body                  #
 utf8wc -lv                                                        |
-# 1:bytes(includes fld.4-5) 2:leters(includes fld.4-5)            #
+# 1:bytes(includes fld.4-5) 2:letters(includes fld.4-5)           #
 # 3:length(includes fld.4-5) 4:rx 5:ry 6:body                     #
 awk '                                                             #
   NF>=6{                                                          #
@@ -125,14 +122,14 @@ awk '                                                             #
     l=l2-l1;                                                      #
     print $1-l,$2-l,$3-l,substr($0,l1+1)                          #
   }'                                                              |
-# 1:bytes(fld.6) 2:leters(fld.6) 3:length(fld.6) 4:rx 5:ry 6:body #
+# 1:bytes(fld.6) 2:letters(fld.6) 3:length(fld.6) 4:rx 5:ry 6:body#
 awk -v lpm=$lpm '                                                 #
   BEGIN {OFMT="%.14g"; ts=0;}                                     #
   {print ts,$3,substr($0,length($1 $2 $3)+4); ts+=($2)*60/lpm;} ' |
 # 1:time 2:length 3:rx 4:ry 5:body                                #
 tscat -zZ                                                         |
 # 1:length 2:rx 3:ry 4:body                                       #
-ptw awk '                                                         #
+awk '                                                             #
   BEGIN {                                                         #
     OFS=""; l0=0; x0=1; y0=1;                                     #
   }                                                               #
