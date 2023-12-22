@@ -5,7 +5,7 @@
 # CENTER.SH : SOKDOK Viewer (Center Version)
 #
 # This program shows the text data by every phrase on the center of
-# the screen (terminal.) at the specified speed.
+# the screen (terminal) at the specified speed.
 # You can experience the feeling of speed-readers because you don't
 # have to move your eyes when you read them. It's said that eye-moving
 # costs pretty heavily for text reading.
@@ -20,7 +20,7 @@
 #                 readers.
 #             textfile
 #               * Text file you want to print on the screen
-#               * The textdata in the file should be split into each
+#               * The text data in the file should be split into each
 #                 phrase that can be read in an instant and put into
 #                 line by line.
 #               * If you omit this argument, the standard input will be
@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-12-22 18:48:22 JST
+	Version : 2023-12-22 20:25:50 JST
 	USAGE
   exit 1
 }

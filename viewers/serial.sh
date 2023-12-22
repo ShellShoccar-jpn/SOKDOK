@@ -5,7 +5,7 @@
 # SERIAL.SH : SOKDOK Viewer (Serial Version)
 #
 # This program shows the text data by every phrase from the top-left
-# to the bottom-right on the screen (terminal.) at the specified speed.
+# to the bottom-right on the screen (terminal) at the specified speed.
 # You can experience that you can't read the text as fast as the "center.sh"
 # viewer. That is because this viewer needs you to move your eyes as
 # well as reading ordinal documents, whereas the "center.sh" doesn't
@@ -22,7 +22,7 @@
 #                 readers.
 #             textfile
 #               * Text file you want to print on the screen
-#               * The textdata in the file should be split into each
+#               * The text data in the file should be split into each
 #                 phrase that can be read in an instant and put into
 #                 line by line.
 #               * If you omit this argument, the standard input will be
@@ -48,7 +48,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-12-22 18:48:57 JST
+	Version : 2023-12-22 20:26:32 JST
 	USAGE
   exit 1
 }
