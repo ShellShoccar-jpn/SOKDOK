@@ -67,7 +67,7 @@ print_usage_and_exit() {
 	                        calculated
 	             * time   : Time taken to display all numbers in the second
 	Options  : -b ... Ring the bell when displaying numbers.
-	Version  : 2023-12-22 17:03:24 JST
+	Version  : 2023-12-22 18:49:47 JST
 	USAGE
   exit 1
 }
@@ -185,7 +185,7 @@ case "$X_mid" in '') X_mid=40;; esac # Assume the VT100's size (80*24)
 case "$Y_mid" in '') Y_mid=12;; esac # if tput cols/lines doesn't work.
 
 # === Questioning ====================================================
-clear
+tput clear
 echo "$q"                                              |
 awk -v num=$num -v tim=$tim '                          #
   BEGIN{t0=0; blink=0.2;                               #

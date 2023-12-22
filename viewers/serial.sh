@@ -48,7 +48,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-12-22 17:01:43 JST
+	Version : 2023-12-22 18:48:57 JST
 	USAGE
   exit 1
 }
@@ -100,7 +100,7 @@ case "$X_max" in '') X_max=80;; esac # Assume the VT100's size (80*24)
 case "$Y_max" in '') Y_max=23;; esac # if tput cols/lines doesn't work.
 
 # === Flash ==========================================================
-clear
+tput clear
 cat $file                                                         |
 utf8wc -lv                                                        |
 # 1:bytes 2:letters 3:length 4:body                               #
