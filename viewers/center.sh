@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-12-22 17:01:15 JST
+	Version : 2023-12-22 17:49:05 JST
 	USAGE
   exit 1
 }
@@ -120,7 +120,7 @@ awk -v xm=$X_mid -v ym=$Y_mid '                                   #
       s  = sprintf("%" l0 "s","");                                #
       s1 = sprintf("\033[%d;%dH%s",ym,int(xm-l0/2),s);            #
     }                                                             #
-    s = substr($0,length($1)+2);                                  #
+    s  = substr($0,length($1)+2);                                 #
     s2 = sprintf("\033[%d;%dH%s",ym,int(xm-$1/2),s);              #
     print s1,s2;                                                  #
     l0 = $1;                                                      #
