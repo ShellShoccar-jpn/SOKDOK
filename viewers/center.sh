@@ -14,7 +14,7 @@
 # Usage     : center.sh letters_per_minute [textfile]
 # Arguments : letters_per_minute
 #               * Speed on the screen in letters per minute
-#               * 800 is the moderate speed for ordinal people.
+#               * 800 is the moderate speed for ordinary people.
 #               * About >=2000 is the speed for speed-readers.
 #               * About >=6000 is the speed for well-trained speed-
 #                 readers.
@@ -26,7 +26,7 @@
 #               * If you omit this argument, the standard input will be
 #                  regarded as the text file to be read.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2023-12-22
+# Written by @colrichie (Shellshoccar Japan) on 2023-12-24
 #
 ######################################################################
 
@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-12-22 20:25:50 JST
+	Version : 2023-12-24 02:25:43 JST
 	USAGE
   exit 1
 }

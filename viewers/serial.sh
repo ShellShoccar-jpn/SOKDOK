@@ -8,7 +8,7 @@
 # to the bottom-right on the screen (terminal) at the specified speed.
 # You can experience that you can't read the text as fast as the "center.sh"
 # viewer. That is because this viewer needs you to move your eyes as
-# well as reading ordinal documents, whereas the "center.sh" doesn't
+# well as reading ordinary documents, whereas the "center.sh" doesn't
 # need you to move your eyes at all. This viewer is made for a control
 # experiment.
 #
@@ -16,7 +16,7 @@
 # Usage     : serial.sh letters_per_minute [textfile]
 # Arguments : letters_per_minute
 #               * Speed on the screen in letters per minute
-#               * 800 is the moderate speed for ordinal people.
+#               * 800 is the moderate speed for ordinary people.
 #               * About >=2000 is the speed for speed-readers.
 #               * About >=6000 is the speed for well-trained speed-
 #                 readers.
@@ -28,7 +28,7 @@
 #               * If you omit this argument, the standard input will be
 #                  regarded as the text file to be read.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2023-12-22
+# Written by @colrichie (Shellshoccar Japan) on 2023-12-24
 #
 ######################################################################
 
@@ -48,7 +48,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2023-12-22 20:26:32 JST
+	Version : 2023-12-24 02:26:19 JST
 	USAGE
   exit 1
 }
