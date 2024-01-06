@@ -182,7 +182,7 @@ s=$(dd if=/dev/urandom bs=4 count=$num 2>/dev/null                 |
 q=${s%$LF*}
 a=${s##*$LF}
 
-# === Get center position ============================================
+# === Get the center position ========================================
 X_mid=$(($(tput cols  2>/dev/null)/2))
 Y_mid=$(($(tput lines 2>/dev/null)/2))
 case "$X_mid" in '') X_mid=40;; esac # Assume the VT100's size (80*24)
