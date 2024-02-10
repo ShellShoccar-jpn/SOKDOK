@@ -26,7 +26,7 @@
 #               * If you omit this argument, the standard input will be
 #                  regarded as the text file to be read.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2024-01-06
+# Written by @colrichie (Shellshoccar Japan) on 2024-02-10
 #
 ######################################################################
 
@@ -46,7 +46,7 @@ export LC_ALL='C'
 print_usage_and_exit () {
   cat <<-USAGE
 	Usage   : ${0##*/} letters_per_minute [textfile]
-	Version : 2024-01-06 13:35:47 JST
+	Version : 2024-02-10 20:05:13 JST
 	USAGE
   exit 1
 }
@@ -65,9 +65,9 @@ type tscat >/dev/null 2>&1 || {
 }
 
 # === Other value definitions ========================================
+unbuf=''
 case $(awk -W interactive 'BEGIN{print}' 2>&1 >/dev/null) in
-  '') alias ubawk='awk -W interactive';;
-   *) alias ubawk='awk'               ;;
+  '') unbuf='-W interactive';;
 esac
 
 
@@ -135,7 +135,7 @@ awk -v lpm=$lpm '                                                 #
 # 1:time 2:length 3:rx 4:ry 5:body                                #
 tscat -zZ                                                         |
 # 1:length 2:rx 3:ry 4:body                                       #
-ubawk '                                                           #
+awk $unbuf '                                                      #
   BEGIN {                                                         #
     OFS=""; l0=0; x0=1; y0=1;                                     #
   }                                                               #

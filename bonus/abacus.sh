@@ -28,7 +28,7 @@
 #              * time   : Time taken to display all numbers in the second
 # Options  : -b ... Ring the bell when displaying numbers.
 #
-# Written by @colrichie (Shellshoccar Japan) on 2024-01-06
+# Written by @colrichie (Shellshoccar Japan) on 2024-02-10
 #
 ######################################################################
 
@@ -67,7 +67,7 @@ print_usage_and_exit() {
 	                        calculated
 	             * time   : Time taken to display all numbers in the second
 	Options  : -b ... Ring the bell when displaying numbers.
-	Version  : 2024-01-06 13:29:30JST
+	Version  : 2024-02-10 20:00:55JST
 	USAGE
   exit 1
 }
@@ -88,9 +88,9 @@ type tscat >/dev/null 2>&1 || {
 # === Other value definitions ========================================
 LF=$( printf '\n_' ); LF=${LF%_}
 BEL=$(printf '\007')
+unbuf=''
 case $(awk -W interactive 'BEGIN{print}' 2>&1 >/dev/null) in
-  '') alias ubawk='awk -W interactive';;
-   *) alias ubawk='awk'               ;;
+  '') unbuf='-W interactive';;
 esac
 
 
@@ -202,7 +202,7 @@ awk -v num=$num -v tim=$tim '                          #
 # 1:timestamp 2:message                                #
 tscat -zZ                                              |
 # 1: message                                           #
-ubawk -v bel=$bel -v xm=$X_mid -v ym=$Y_mid '          #
+awk -v bel=$bel -v xm=$X_mid -v ym=$Y_mid $unbuf '     #
   BEGIN {                                              #
     OFS=""; l0=0;                                      #
   }                                                    #
