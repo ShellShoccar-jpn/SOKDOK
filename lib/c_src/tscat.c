@@ -2,7 +2,7 @@
 #
 # TSCAT - A "cat" Command Which Can Reprodude the Timing of Flow
 #
-# USAGE   : tscat [-c|-e|-z] [-Z] [-k] [-u] [-y] [-p n] [file [...]]
+# USAGE   : tscat [-c|-e|-I|-z] [-Z] [-1kuy] [-p n] [file [...]]
 # Args    : file ........ Filepath to be send ("-" means STDIN)
 #                         The file MUST be a textfile and MUST have
 #                         a timestamp at the first field to make the
@@ -12,20 +12,27 @@
 #                         And, the string from the top of the line to
 #                         the charater will be cut before outgoing to
 #                         the stdout.
-# Options : -c,-e,-z .... Specify the format for timestamp. You can choose
+# Options : -c,-e,-I,-z . Specify the format for timestamp. You can choose
 #                         one of them.
 #                           -c ... "YYYYMMDDhhmmss[.n]" (default)
 #                                  Calendar time (standard time) in your
 #                                  timezone (".n" is the digits under
 #                                  second. You can specify up to nano
 #                                  second.)
-#                           -e ... "n[.n]"
+#                           -e ... "[+|-]n[.n]"
 #                                  The number of seconds since the UNIX
-#                                  epoch (".n" is the same as -x)
-#                           -z ... "n[.n]"
+#                                  epoch (".n" is the same as -c)
+#                           -I ... "YYYY-MM-DDThh:mm:ss[,n][{{+|-}hh:mm|Z}]"
+#                                  Ext. ISO 8601 formatted time in your
+#                                  timezone (".n" is the same as -c)
+#                           -z ... "[+|-]n[.n]"
 #                                  The number of seconds since this
 #                                  command has startrd (".n" is the same
-#                                  as -x)
+#                                  as -c)
+#                                  If a negative number is given, this
+#                                  command will reset the reference time
+#                                  to when the negative number string was
+#                                  received.
 #           -Z .......... Define the time when the first line came as 0.
 #                         For instance, imagine that the first field of
 #                         the first line is "20200229235959," and the
@@ -33,6 +40,10 @@
 #                         "-c" option is given. In this case, the first
 #                         line is sent to stdout immediately, and after
 #                         five seconds, the second line is sent.
+#           -1 .......... * Output one character/line (LF) at first before
+#                           outputting the incoming data.
+#                         * This option might work as a starter of the
+#                           system embedding this command.
 #           -k .......... Keep the timestamp at the head of each line
 #                         when outputting the line to the stdout.
 #           -u .......... Set the date in UTC when -c option is set
@@ -55,11 +66,11 @@
 #                         but if failed, it will try the smaller numbers.
 # Return  : Return 0 only when finished successfully
 #
-# How to compile : cc -O3 -o __CMDNAME__ __SRCNAME__ -lrt
+# How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__ -lrt
 #                  (if it doesn't work)
-# How to compile : cc -O3 -o __CMDNAME__ __SRCNAME__
+# How to compile : cc -O3 -std=c99 -o __CMDNAME__ __SRCNAME__
 #
-# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2024-06-23
+# Written by Shell-Shoccar Japan (@shellshoccarjpn) on 2026-09-24
 #
 # This is a public-domain software (CC0). It means that all of the
 # people can use this for any purposes with no restrictions at all.
@@ -80,8 +91,17 @@
 /*=== Initial Setting ==============================================*/
 
 /*--- headers ------------------------------------------------------*/
-#if defined(__linux) || defined(__linux__)
-  /* This definition is for strptime() on Linux */
+/* Solaris 11.3's <sys/feature_tests.h> only recognizes the exact
+ * values _XOPEN_SOURCE==600 / _POSIX_C_SOURCE==200112L for its UNIX 03
+ * detection and has no notion of POSIX.1-2008/SUSv4 at all; requesting
+ * 700 there trips its strict conformance-level check and aborts the
+ * build, so __EXTENSIONS__ (which sidesteps that check entirely and
+ * exposes every POSIX/XSI/BSD interface regardless of C standard
+ * level) is used there instead. Everywhere else, _XOPEN_SOURCE 700 is
+ * used directly, for strptime()/strnlen().                          */
+#if defined(__sun) || defined(__SVR4)
+  #define __EXTENSIONS__
+#else
   #define _XOPEN_SOURCE 700
 #endif
 #include <errno.h>
@@ -109,22 +129,29 @@
 #ifndef LLONG_MAX
   #define LLONG_MAX 9223372036854775807
 #endif
+/* Buffer size for the read_and_write_a_line() */
+#define LINE_BUF 1024
+
+/*--- data type definitions ----------------------------------------*/
+typedef struct timespec tmsp;
 
 /*--- prototype functions ------------------------------------------*/
-void get_time_data_arrived(int iFd, struct timespec *ptsTime);
+void get_time_data_arrived(int iFd, tmsp *ptsTime);
 int  read_1st_field_as_a_timestamp(FILE *fp, char *pszTime);
 int  read_and_write_a_line(FILE *fp);
 int  skip_over_a_line(FILE *fp);
-int  parse_calendartime(char* pszTime, struct timespec *ptsTime);
-int  parse_unixtime(char* pszTime, struct timespec *ptsTime);
-void spend_my_spare_time(struct timespec *ptsTo, struct timespec *ptsOffset);
+int  parse_calendartime(char* pszTime, tmsp *ptsTime);
+int  parse_unixtime(char* pszTime, tmsp *ptsTime);
+int  parse_iso8601time(char* pszTime, tmsp *ptsTime);
+void spend_my_spare_time(tmsp *ptsTo, tmsp *ptsOffset);
 int  change_to_rtprocess(int iPrio);
 
 /*--- global variables ---------------------------------------------*/
-char*           gpszCmdname;  /* The name of this command                    */
-int             giTypingmode; /* Typing mode by option -y is on if >0        */
-int             giVerbose;    /* speaks more verbosely by the greater number */
-struct timespec gtsZero;      /* The zero-point time                         */
+char* gpszCmdname;  /* The name of this command                    */
+int   giTypingmode; /* Typing mode by option -y is on if >0        */
+int   giVerbose;    /* speaks more verbosely by the greater number */
+int   giTZoffs;     /* Offset in second in the local timezone      */
+tmsp  gtsZero;      /* The zero-point time                         */
 
 /*=== Define the functions for printing usage and error ============*/
 
@@ -132,9 +159,9 @@ struct timespec gtsZero;      /* The zero-point time                         */
 void print_usage_and_exit(void) {
   fprintf(stderr,
 #if defined(_POSIX_PRIORITY_SCHEDULING) && !defined(__OpenBSD__) && !defined(__APPLE__)
-    "USAGE   : %s [-c|-e|-z] [-Z] [-k] [-u] [-y] [-p n] [file [...]]\n"
+    "USAGE   : %s [-c|-e|-I|-z] [-Z] [-1kuy] [-p n] [file [...]]\n"
 #else
-    "USAGE   : %s [-c|-e|-z] [-Z] [-k] [-u] [-y] [file [...]]\n"
+    "USAGE   : %s [-c|-e|-I|-z] [-Z] [-1kuy] [file [...]]\n"
 #endif
     "Args    : file ........ Filepath to be send (\"-\" means STDIN)\n"
     "                        The file MUST be a textfile and MUST have\n"
@@ -145,20 +172,28 @@ void print_usage_and_exit(void) {
     "                        And, the string from the top of the line to\n"
     "                        the charater will be cut before outgoing to\n"
     "                        the stdout.\n"
-    "Options : -c,-e,-z .... Specify the format for timestamp. You can choose\n"
+    "Options : -c,-e,-I,-z . Specify the format for timestamp. You can choose\n"
     "                        one of them.\n"
     "                          -c ... \"YYYYMMDDhhmmss[.n]\" (default)\n"
     "                                 Calendar time (standard time) in your\n"
     "                                 timezone (\".n\" is the digits under\n"
     "                                 second. You can specify up to nano\n"
     "                                 second.)\n"
-    "                          -e ... \"n[.n]\"\n"
+    "                          -e ... \"[+|-]n[.n]\"\n"
     "                                 The number of seconds since the UNIX\n"
     "                                 epoch (\".n\" is the same as -c)\n"
-    "                          -z ... \"n[.n]\"\n"
+    "                          -I ... \"YYYY-MM-DDThh:mm:ss[,n][{{+|-}hh:mm|Z}]"
+                                                                          "\"\n"
+    "                                 Ext. ISO 8601 formatted time in your\n"
+    "                                 timezone (\".n\" is the same as -c)\n"
+    "                          -z ... \"[+|-]n[.n]\"\n"
     "                                 The number of seconds since this\n"
     "                                 command has started (\".n\" is the same\n"
     "                                 as -c)\n"
+    "                                 If a negative number is given, this\n"
+    "                                 command will reset the reference time\n"
+    "                                 to when the negative number string was\n"
+    "                                 received.\n"
     "          -Z .......... Define the time when the first line came as 0.\n"
     "                        For instance, imagine that the first field of\n"
     "                        the first line is \"20200229235959,\" and the\n"
@@ -166,6 +201,10 @@ void print_usage_and_exit(void) {
     "                        \"-c\" option is given. In this case, the first\n"
     "                        line is sent to stdout immediately, and after\n"
     "                        five seconds, the second line is sent.\n"
+    "          -1 .......... * Output one character/line (LF) at first before\n"
+    "                          outputting the incoming data.\n"
+    "                        * This option might work as a starter of the\n"
+    "                          system embedding this command.\n"
     "          -k .......... Keep the timestamp at the head of each line\n"
     "                        when outputting the line to the stdout.\n"
     "          -u .......... Set the date in UTC when -c option is set\n"
@@ -188,7 +227,7 @@ void print_usage_and_exit(void) {
     "                        Larger numbers maybe require a privileged user,\n"
     "                        but if failed, it will try the smaller numbers.\n"
 #endif
-    "Version : 2024-06-23 13:28:01 JST\n"
+    "Version : 2026-09-24 01:09:03 JST\n"
     "          (POSIX C language)\n"
     "\n"
     "Shell-Shoccar Japan (@shellshoccarjpn), No rights reserved.\n"
@@ -229,21 +268,22 @@ void error_exit(int iErrno, const char* szFormat, ...) {
 int main(int argc, char *argv[]) {
 
 /*--- Variables ----------------------------------------------------*/
-int      iMode;           /* 0:"-c"  1:"-e"  2:"-z",
-                             4:"-cZ" 5:"-eZ" 6:"-zZ"                     */
-int      iKeepTs;         /* -k option flag (0>:Keep timestamps, =0:Drop)*/
-int      iPrio;           /* -p option number (default 1)                */
-int      iRet;            /* return code                                 */
-int      iGotOffset;      /* 0:NotYet 1:GetZeroPoint 2:Done              */
-char     szTime[34];      /* Buffer for the 1st field of lines           */
-struct timespec tsTime;   /* Parsed time for the 1st field               */
-struct timespec tsOffset; /* Zero-point time to adjust the 1st field one */
-char    *pszPath;         /* filepath on arguments                       */
-char    *pszFilename;     /* filepath (for message)                      */
-int      iFileno;         /* file# of filepath                           */
-int      iFd;             /* file descriptor                             */
-FILE    *fp;              /* file handle                                 */
-int      i;               /* all-purpose int                             */
+int   iMode;         /* 0:"-c",  1:"-e",  2:"-z",  3:"-I",
+                        4:"-cZ", 5:"-eZ", 6:"-zZ", 7:"-IZ"          */
+int   iOpt_1;        /* -1 option flag (default 0)                  */
+int   iKeepTs;       /* -k option flag (0>:Keep timestamps, =0:Drop)*/
+int   iPrio;         /* -p option number (default 1)                */
+int   iRet;          /* return code                                 */
+int   iGotOffset;    /* 0:NotYet 1:GetZeroPoint 2:Done              */
+char  szTime[43];    /* Buffer for the 1st field of lines           */
+tmsp  tsTime;        /* Parsed time for the 1st field               */
+tmsp  tsOffset;      /* Zero-point time to adjust the 1st field one */
+char *pszPath;       /* filepath on arguments                       */
+char *pszFilename;   /* filepath (for message)                      */
+int   iFileno;       /* file# of filepath                           */
+int   iFd;           /* file descriptor                             */
+FILE *fp;            /* file handle                                 */
+int   i;             /* all-purpose int                             */
 
 /*--- Initialize ---------------------------------------------------*/
 if (clock_gettime(CLOCK_REALTIME,&gtsZero) != 0) {
@@ -262,23 +302,26 @@ setlocale(LC_CTYPE, "");
 
 /*--- Set default parameters of the arguments ----------------------*/
 iMode        = 0; /* 0:"-c"(default) 1:"-e" 2:"-z" 4:"-cZ" 5:"-eZ" 6:"-zZ" */
+iOpt_1       = 0; /* 0:Normal 1:Output one character/line at first         */
 iKeepTs      = 0; /* 0>:Keep timestamps, =0:Drop(default) */
 giTypingmode = 0;
 iPrio        = 1;
 giVerbose    = 0;
 /*--- Parse options which start by "-" -----------------------------*/
-while ((i=getopt(argc, argv, "cep:kuyvhZz")) != -1) {
+while ((i=getopt(argc, argv, "ceIp:1kuyvhZz")) != -1) {
   switch (i) {
     case 'c': iMode&=4; iMode+=0;            break;
     case 'e': iMode&=4; iMode+=1;            break;
     case 'z': iMode&=4; iMode+=2;            break;
+    case 'I': iMode&=4; iMode+=3;            break;
     case 'Z': iMode&=3; iMode+=4;            break;
+    case '1': iOpt_1=1;                      break;
     case 'k': iKeepTs=1;                     break;
     case 'u': (void)setenv("TZ", "UTC0", 1); break;
     case 'y': giTypingmode=1;                break;
     #if defined(_POSIX_PRIORITY_SCHEDULING) && !defined(__OpenBSD__) && !defined(__APPLE__)
       case 'p': if (sscanf(optarg,"%d",&iPrio) != 1) {print_usage_and_exit();}
-                                               break;
+                                              break;
     #endif
     case 'v': giVerbose++;                   break;
     case 'h': print_usage_and_exit();
@@ -296,6 +339,18 @@ if (setvbuf(stdout,NULL,(giTypingmode>0)?_IONBF:_IOLBF,0)!=0) {
 
 /*=== Try to make me a realtime process ============================*/
 if (change_to_rtprocess(iPrio)==-1) {print_usage_and_exit();}
+
+/*=== Calculate the timezone offset if the -I option is enabled ====*/
+if (iMode%4==3) {
+  /* "giTZoffset" means "localtime - UTCtime" */
+  giTZoffs = (int)difftime(mktime(localtime((time_t[]){0})),
+                           mktime(   gmtime((time_t[]){0})) );
+}
+
+/*=== Output the starter charater/line when -1 is enabled ==========*/
+if (iOpt_1 && putchar('\n')==EOF) {
+  error_exit(errno, "putchar() in main(): %s\n", strerror(errno));
+}
 
 /*=== Each file loop ===============================================*/
 iRet       =  0;
@@ -330,6 +385,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
     case 0: /* "-c" Calendar time mode */
              while (1) {
                switch (read_1st_field_as_a_timestamp(fp, szTime)) {
+                 case  0:
                  case  1: /* read successfully */
                           if (! parse_calendartime(szTime, &tsTime)) {
                             warning("%s: %s: Invalid calendar-time, "
@@ -376,11 +432,6 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                                      break;
                           }
                           break;
-                 case  0: /* unexpected LF */
-                          warning("%s: %s: Invalid timestamp field found, "
-                                  "skip this line.\n", pszFilename, szTime);
-                          iRet = 1;
-                          break;
                  case -2: /* unexpected EOF */
                           warning("%s: Came to EOF suddenly\n", pszFilename);
                           iRet = 1;
@@ -400,6 +451,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
     case 1: /* "-e" UNIX epoch time mode */
              while (1) {
                switch (read_1st_field_as_a_timestamp(fp, szTime)) {
+                 case  0:
                  case  1: /* read successfully */
                           if (! parse_unixtime(szTime, &tsTime)) {
                             warning("%s: %s: Invalid UNIX-time, "
@@ -446,11 +498,6 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                                      break;
                           }
                           break;
-                 case  0: /* unexpected LF */
-                          warning("%s: %s: Invalid timestamp field found, "
-                                  "skip this line.\n", pszFilename, szTime);
-                          iRet = 1;
-                          break;
                  case -2: /* unexpected EOF */
                           warning("%s: Came to EOF suddenly\n", pszFilename);
                           iRet = 1;
@@ -470,6 +517,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
     case 2: /* "-z" Zero time mode */
              while (1) {
                switch (read_1st_field_as_a_timestamp(fp, szTime)) {
+                 case  0:
                  case  1: /* read successfully */
                           if (! parse_unixtime(szTime, &tsTime)) {
                             warning("%s: %s: Invalid number of seconds, "
@@ -497,6 +545,11 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                             tsOffset.tv_sec  = gtsZero.tv_sec ;
                             tsOffset.tv_nsec = gtsZero.tv_nsec;
                             iGotOffset=2;
+                          } else if (tsTime.tv_sec < 0) {
+                            if (clock_gettime(CLOCK_REALTIME,&tsOffset) != 0) {
+                              error_exit(errno,"clock_gettime() at %d: %s\n",
+                                         __LINE__,strerror(errno)            );
+                            }
                           }
                           spend_my_spare_time(&tsTime, &tsOffset);
                           if (iKeepTs) {
@@ -522,10 +575,71 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                                      break;
                           }
                           break;
-                 case  0: /* unexpected LF */
-                          warning("%s: %s: Invalid timestamp field found, "
-                                  "skip this line.\n", pszFilename, szTime);
+                 case -2: /* unexpected EOF */
+                          warning("%s: Came to EOF suddenly\n", pszFilename);
                           iRet = 1;
+                 case -1: /*   expected EOF */
+                          goto CLOSE_THISFILE;
+                          break;
+                 case -3: /* file access error */
+                          warning("%s: File access error, skip it\n",
+                                  pszFilename);
+                          iRet = 1;
+                          goto CLOSE_THISFILE;
+                 default: /* bug or system error */
+                          error_exit(1,"Unexpected error at %d\n", __LINE__);
+               }
+             }
+             break;
+    case 3: /* "-I" Extended ISO 8601 formatted time mode */
+             while (1) {
+               switch (read_1st_field_as_a_timestamp(fp, szTime)) {
+                 case  0:
+                 case  1: /* read successfully */
+                          if (! parse_iso8601time(szTime, &tsTime)) {
+                            warning("%s: %s: Invalid ISO8601-time, "
+                                    "skip this line\n", pszFilename, szTime);
+                            iRet = 1;
+                            switch (skip_over_a_line(fp)) {
+                              case  1: /* expected LF */
+                                       break;
+                              case -1: /* expected EOF */
+                                       goto CLOSE_THISFILE;
+                              case -2: /* file access error */
+                                       warning("%s: File access error, "
+                                               "skip it\n", pszFilename);
+                                       goto CLOSE_THISFILE;
+                                       break;
+                              default: /* bug of system error */
+                                       error_exit(1,"Unexpected error at %d\n",
+                                                  __LINE__);
+                                       break;
+                            }
+                            break;
+                          }
+                          spend_my_spare_time(&tsTime, NULL);
+                          if (iKeepTs) {
+                            if (fputs(szTime, stdout)==EOF) {
+                              error_exit(errno,"stdout write error #m1: %s\n",
+                                         strerror(errno));
+                            }
+                          }
+                          switch (read_and_write_a_line(fp)) {
+                            case  1: /* expected LF */
+                                     break;
+                            case -1: /* expected EOF */
+                                     goto CLOSE_THISFILE;
+                            case -2: /* file access error */
+                                     warning("%s: File access error, "
+                                             "skip it\n", pszFilename);
+                                     iRet = 1;
+                                     goto CLOSE_THISFILE;
+                                     break;
+                            default: /* bug of system error */
+                                     error_exit(1,"Unexpected error at %d\n",
+                                                __LINE__);
+                                     break;
+                          }
                           break;
                  case -2: /* unexpected EOF */
                           warning("%s: Came to EOF suddenly\n", pszFilename);
@@ -550,6 +664,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
              }
              while (1) {
                switch (read_1st_field_as_a_timestamp(fp, szTime)) {
+                 case  0:
                  case  1: /* read successfully */
                           if (! parse_calendartime(szTime, &tsTime)) {
                             warning("%s: %s: Invalid calendar-time, "
@@ -609,11 +724,6 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                                      break;
                           }
                           break;
-                 case  0: /* unexpected LF */
-                          warning("%s: %s: Invalid timestamp field found, "
-                                  "skip this line.\n", pszFilename, szTime);
-                          iRet = 1;
-                          break;
                  case -2: /* unexpected EOF */
                           warning("%s: Came to EOF suddenly\n", pszFilename);
                           iRet = 1;
@@ -637,9 +747,100 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
              }
              while (1) {
                switch (read_1st_field_as_a_timestamp(fp, szTime)) {
+                 case  0:
                  case  1: /* read successfully */
                           if (! parse_unixtime(szTime, &tsTime)) {
                             warning("%s: %s: Invalid timestamp, "
+                                    "skip this line\n", pszFilename, szTime);
+                            iRet = 1;
+                            switch (skip_over_a_line(fp)) {
+                              case  1: /* expected LF */
+                                       break;
+                              case -1: /* expected EOF */
+                                       goto CLOSE_THISFILE;
+                              case -2: /* file access error */
+                                       warning("%s: File access error, "
+                                               "skip it\n", pszFilename);
+                                       goto CLOSE_THISFILE;
+                                       break;
+                              default: /* bug of system error */
+                                       error_exit(1,"Unexpected error at %d\n",
+                                                  __LINE__);
+                                       break;
+                            }
+                            break;
+                          }
+                          if (iGotOffset==1) {
+                            /* tsOffset = gtsZero - tsTime */
+                            if ((gtsZero.tv_nsec - tsTime.tv_nsec) < 0) {
+                              tsOffset.tv_sec  = gtsZero.tv_sec 
+                                                 - tsTime.tv_sec  -          1;
+                              tsOffset.tv_nsec = gtsZero.tv_nsec
+                                                 - tsTime.tv_nsec + 1000000000;
+                            } else {
+                              tsOffset.tv_sec  = gtsZero.tv_sec -tsTime.tv_sec ;
+                              tsOffset.tv_nsec = gtsZero.tv_nsec-tsTime.tv_nsec;
+                            }
+                            iGotOffset=2;
+                          } else if (iGotOffset   ==2 &&
+                                     iMode        ==6 &&
+                                     tsTime.tv_sec< 0   ) {
+                            if (clock_gettime(CLOCK_REALTIME,&tsOffset) != 0) {
+                              error_exit(errno,"clock_gettime() at %d: %s\n",
+                                         __LINE__,strerror(errno)            );
+                            }
+                          }
+                          spend_my_spare_time(&tsTime, &tsOffset);
+                          if (iKeepTs) {
+                            if (fputs(szTime, stdout)==EOF) {
+                              error_exit(errno,"stdout write error #m5: %s\n",
+                                         strerror(errno));
+                            }
+                          }
+                          switch (read_and_write_a_line(fp)) {
+                            case  1: /* expected LF */
+                                     break;
+                            case -1: /* expected EOF */
+                                     goto CLOSE_THISFILE;
+                            case -2: /* file access error */
+                                     warning("%s: File access error, "
+                                             "skip it\n", pszFilename);
+                                     iRet = 1;
+                                     goto CLOSE_THISFILE;
+                                     break;
+                            default: /* bug of system error */
+                                     error_exit(1,"Unexpected error at %d\n",
+                                                __LINE__);
+                                     break;
+                          }
+                          break;
+                 case -2: /* unexpected EOF */
+                          warning("%s: Came to EOF suddenly\n", pszFilename);
+                          iRet = 1;
+                 case -1: /*   expected EOF */
+                          goto CLOSE_THISFILE;
+                          break;
+                 case -3: /* file access error */
+                          warning("%s: File access error, skip it\n",
+                                  pszFilename);
+                          iRet = 1;
+                          goto CLOSE_THISFILE;
+                 default: /* bug or system error */
+                          error_exit(1,"Unexpected error at %d\n", __LINE__);
+               }
+             }
+             break;
+    case 7: /* "-IZ" Ext.ISO 8601 formatted time with immediate outgoing mode */
+             if (iGotOffset==0) {
+               get_time_data_arrived(iFd, &gtsZero);
+               iGotOffset=1;
+             }
+             while (1) {
+               switch (read_1st_field_as_a_timestamp(fp, szTime)) {
+                 case  0:
+                 case  1: /* read successfully */
+                          if (! parse_iso8601time(szTime, &tsTime)) {
+                            warning("%s: %s: Invalid ISO8601-time, "
                                     "skip this line\n", pszFilename, szTime);
                             iRet = 1;
                             switch (skip_over_a_line(fp)) {
@@ -675,7 +876,7 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                           spend_my_spare_time(&tsTime, &tsOffset);
                           if (iKeepTs) {
                             if (fputs(szTime, stdout)==EOF) {
-                              error_exit(errno,"stdout write error #m5: %s\n",
+                              error_exit(errno,"stdout write error #m4: %s\n",
                                          strerror(errno));
                             }
                           }
@@ -696,11 +897,6 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                                      break;
                           }
                           break;
-                 case  0: /* unexpected LF */
-                          warning("%s: %s: Invalid timestamp field found, "
-                                  "skip this file.\n", pszFilename, szTime);
-                          iRet = 1;
-                          break;
                  case -2: /* unexpected EOF */
                           warning("%s: Came to EOF suddenly\n", pszFilename);
                           iRet = 1;
@@ -710,7 +906,6 @@ while ((pszPath = argv[iFileno]) != NULL || iFileno == 0) {
                  case -3: /* file access error */
                           warning("%s: File access error, skip it\n",
                                   pszFilename);
-                          iRet = 1;
                           goto CLOSE_THISFILE;
                  default: /* bug or system error */
                           error_exit(1,"Unexpected error at %d\n", __LINE__);
@@ -744,7 +939,7 @@ return(iRet);}
  *      ptsTime : Pointer to return the time when data arrived
  * [ret] (none) : This function alway calls error_exit() if any error
                   occured.                                          */
-void get_time_data_arrived(int iFd, struct timespec *ptsTime) {
+void get_time_data_arrived(int iFd, tmsp *ptsTime) {
 
   /*--- Variables --------------------------------------------------*/
   fd_set fdsRead;
@@ -768,8 +963,9 @@ void get_time_data_arrived(int iFd, struct timespec *ptsTime) {
  * [in] fp      : Filehandle for read
  *      pszTime : Pointer for the string buffer to get the timestamp on
  *                the 1st field with a white space (if it exists)
- *                (Size of the buffer you give MUST BE 34 BYTES or more!)
- * [ret] == 0 : Finished reading due to '\n'
+ *                (Size of the buffer you give MUST BE 43 BYTES or more!)
+ * [ret] == 0 : Finished reading due to '\n', but you may use the result
+ *              in the buffer
  *       == 1 : Finished reading successfully, you may use the result in
  *              the buffer
  *       ==-1 : Finished reading because no more data in the "fp"
@@ -789,7 +985,7 @@ int read_1st_field_as_a_timestamp(FILE *fp, char *pszTime) {
       case ' ' :
       case '\t':
                  pszTime[iTslen  ]=iChar;
-                 pszTime[iTslen+1]=    0;
+                 pszTime[iTslen+1]= '\0';
                  return 1;
       case EOF :
                  if         (feof(  fp)) {
@@ -810,9 +1006,13 @@ int read_1st_field_as_a_timestamp(FILE *fp, char *pszTime) {
                    return -4;
                  }
       case '\n':
+                 pszTime[iTslen  ]= '\0';
+                 if (ungetc('\n',fp) == EOF) {
+                   error_exit(errno,"ungetc(): %s\n",strerror(errno));
+                 }
                  return 0;
       default  :
-                 if (iTslen>32) {                                 continue;}
+                 if (iTslen>41) {                                 continue;}
                  else           {pszTime[iTslen]=iChar; iTslen++; continue;}
     }
   }
@@ -828,32 +1028,32 @@ int read_1st_field_as_a_timestamp(FILE *fp, char *pszTime) {
 int read_and_write_a_line(FILE *fp) {
 
   /*--- Variables --------------------------------------------------*/
-  int        iChar;
+  char       szBuf[LINE_BUF]; /* Buffer for reading 1-line */
+  int        iLen;            /* Actual size of string in the buffer */
+  int        iChar;           /* Buffer for reading 1-char */
 
   /*--- Reading and writing a line (normal mode) -------------------*/
   if (! giTypingmode) {
-    while (1) {
-      iChar = getc(fp);
-      switch (iChar) {
-        case EOF :
-                   if (feof(  fp)) {return -1;}
-                   if (ferror(fp)) {return -2;}
-                   else            {return -3;}
-        case '\n':
-                   if (putchar('\n' )==EOF) {
-                     error_exit(errno,"stdout write error #f1: %s\n",
-                                strerror(errno));
-                   }
-                   return 1;
-        default  :
-                   if (putchar(iChar)==EOF) {
-                     error_exit(errno,"stdout write error #f2: %s\n",
-                                strerror(errno));
-                   }
-                   break;
+    while (fgets(szBuf,LINE_BUF,fp) != NULL) {
+      if (fputs(szBuf,stdout) < 0) {
+        error_exit(errno,"fputs() #RW1L-1: %s\n",strerror(errno));
+      }
+      iLen = strnlen(szBuf, LINE_BUF);
+      if (szBuf[iLen-1] == '\n') {return 1;}
+      if (iLen < LINE_BUF-1) {
+        iChar=getc(fp);
+        if (iChar==EOF ) {if (feof(  fp)) {return -1;}
+                          if (ferror(fp)) {return -2;}
+                          else            {return -3;}}
+        while (putchar(iChar)==EOF) {
+          error_exit(errno,"putchar() #RW1L-1: %s\n",strerror(errno));
+        }
+        if (iChar=='\n') {return 1;                   }
       }
     }
-    return -3;
+    if (feof(  fp)) {return -1;}
+    if (ferror(fp)) {return -2;}
+    else            {return -3;}
   }
 
   /*--- Reading and writing a line (typing mode) -------------------*/
@@ -865,34 +1065,43 @@ int read_and_write_a_line(FILE *fp) {
                else            {return -3;}
     case '\n':
                if (putchar('\n' )==EOF) {
-                 error_exit(errno,"stdout write error #f3: %s\n",
+                 error_exit(errno,"putchar() #RW1L-2: %s\n",
                             strerror(errno));
                }
                return 1;
     default  :
                if (putchar(iChar)==EOF) {
-                 error_exit(errno,"stdout write error #f4: %s\n",
+                 error_exit(errno,"putchar() #RW1L-3: %s\n",
                             strerror(errno));
                }
                break;
   }
-  while (1) {
-    iChar = getc(fp);
-    switch (iChar) {
-      case EOF :
-                 if (feof(  fp)) {return -1;}
-                 if (ferror(fp)) {return -2;}
-                 else            {return -3;}
-      case '\n':
-                 return 1;
-      default  :
-                 if (putchar(iChar)==EOF) {
-                   error_exit(errno,"stdout write error #f5: %s\n",
-                              strerror(errno));
-                 }
-                 break;
+  while (fgets(szBuf,LINE_BUF,fp) != NULL) {
+    iLen = strnlen(szBuf, LINE_BUF);
+    if (szBuf[iLen-1] == '\n') {
+      szBuf[iLen-1] = '\0';
+      if (fputs(szBuf,stdout) < 0) {
+        error_exit(errno,"fputs() #RW1L-2: %s\n",strerror(errno));
+      }
+      return 1;
+    }
+    if (fputs(szBuf,stdout) < 0) {
+      error_exit(errno,"fputs() #RW1L-3: %s\n",strerror(errno));
+    }
+    if (iLen < LINE_BUF-1) {
+      iChar=getc(fp);
+      if (iChar==EOF ) {if (feof(  fp)) {return -1;}
+                        if (ferror(fp)) {return -2;}
+                        else            {return -3;}}
+      if (iChar=='\n') {return 1;                   }
+      while (putchar(iChar)==EOF) {
+        error_exit(errno,"putchar() #RW1L-4: %s\n",strerror(errno));
+      }
     }
   }
+  if (feof(  fp)) {return -1;}
+  if (ferror(fp)) {return -2;}
+  else            {return -3;}
 }
 
 /*=== Read and throw away one line ===================================
@@ -929,7 +1138,7 @@ int skip_over_a_line(FILE *fp) {
  *       ptsTime : To be set the parsed time ("timespec" structure)
  * [ret] > 0 : success
  *       ==0 : error (failure to parse)                             */
-int parse_calendartime(char* pszTime, struct timespec *ptsTime) {
+int parse_calendartime(char* pszTime, tmsp *ptsTime) {
 
   /*--- Variables --------------------------------------------------*/
   char szDate[21], szNsec[10], szDate2[26];
@@ -1000,8 +1209,21 @@ int parse_calendartime(char* pszTime, struct timespec *ptsTime) {
   i+=2; for (   ; j<i; j++) {szDate2[k]=szDate[j];k++;} /* S */
   szDate2[k]=  0;
   memset(&tmDate, 0, sizeof(tmDate));
-  if(! strptime(szDate2, "%Y-%m-%dT%H:%M:%S", &tmDate)) {return 0;}
-  ptsTime->tv_sec = mktime(&tmDate);
+  if(! strptime(szDate2, "%Y-%m-%dT%H:%M:%S", &tmDate)) {
+    if (giVerbose>1) {
+      warning("Unexpect error at strptime() in parse_calendartime()\n");
+    }
+    return 0;
+  }
+  ptsTime->tv_sec  = mktime(&tmDate);
+  if (ptsTime->tv_sec == (time_t)-1) {
+    /* mktime() is only specified to return (time_t)-1 on failure; it
+     * is NOT specified to leave errno unchanged on success (and in
+     * practice it can be left set by unrelated internal work, such
+     * as loading timezone data), so errno must not be used here.   */
+    if (giVerbose>1) {warning("%s: Invalid calendartime string\n", pszTime);}
+    return 0;
+  }
   ptsTime->tv_nsec = atol(szNsec);
 
   return 1;
@@ -1012,16 +1234,18 @@ int parse_calendartime(char* pszTime, struct timespec *ptsTime) {
  *       ptsTime : To be set the parsed time ("timespec" structure)
  * [ret] > 0 : success
  *       ==0 : error (failure to parse)                             */
-int parse_unixtime(char* pszTime, struct timespec *ptsTime) {
+int parse_unixtime(char* pszTime, tmsp *ptsTime) {
 
   /*--- Variables --------------------------------------------------*/
-  char szSec[20], szNsec[10];
+  char szSec[21], szNsec[10];
   int  i, j, k;            /* +-- 0:(reading integer part)          */
   char c;                  /* +-- 1:finish reading without_decimals */
   int  iStatus = 0; /* <--------- 2:to_be_started reading decimals  */
 
   /*--- Separate pszTime into seconds and nanoseconds --------------*/
-  for (i=0; i<19; i++) {
+  i=0; j=19;
+  if (pszTime[i]=='+'||pszTime[i]=='-') {szSec[i]=pszTime[i];i++;j++;}
+  for (   ; i<j; i++) {
     c = pszTime[i];
     if      ('0'<=c && c<='9'         ) {szSec[i]=c;                       }
     else if (c=='.'                   ) {szSec[i]=0; iStatus=2; i++; break;}
@@ -1033,10 +1257,10 @@ int parse_unixtime(char* pszTime, struct timespec *ptsTime) {
                                     return 0;
                                    }
   }
-  if ((iStatus==0) && (i==19)) {
-    switch (pszTime[19]) {
-      case '.': szSec[19]=0; iStatus=2; i++; break;
-      case  0 : szSec[19]=0; iStatus=1;      break;
+  if ((iStatus==0) && (i==j)) {
+    switch (pszTime[j]) {
+      case '.': szSec[j]=0; iStatus=2; i++; break;
+      case  0 : szSec[j]=0; iStatus=1;      break;
       default : warning("The integer part of the timestamp is too big "
                         "as a UNIX-time\n");
                 return 0;
@@ -1066,11 +1290,146 @@ int parse_unixtime(char* pszTime, struct timespec *ptsTime) {
   }
 
   /*--- Pack the time-string into the timespec structure -----------*/
-  ptsTime->tv_sec = (time_t)atoll(szSec);
-  if (ptsTime->tv_sec<0) {
-    ptsTime->tv_sec = (sizeof(time_t)>=8) ? LLONG_MAX : LONG_MAX;
+  ptsTime->tv_sec  = (time_t)atoll(szSec);
+  ptsTime->tv_nsec =         atol(szNsec);
+
+  return 1;
+}
+
+/*=== Parse an extended ISO 8601 time ================================
+ * [in]  pszTime : ISO 8601 (ext.) string in the localtime
+   (/[0-9]{1,10}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}([,.][0-9]{1,9})?([+-][0-9]{2}:?[0-9]{2}|Z)?/)
+ *       ptsTime : To be set the parsed time ("timespec" structure)
+ * [ret] > 0 : success
+ *       ==0 : error (failure to parse)                             */
+int parse_iso8601time(char* pszTime, tmsp *ptsTime) {
+
+  /*--- Variables --------------------------------------------------*/
+  char szDate[26], szNsec[10];
+  int  iTZoffs;            /* +-- 0:now reading integer part or invalid string*/
+  int  i, j, k;            /* +-- 1:to_be_started reading decimals  */
+  char c;                  /* +-- 2:to_be_started reading timezone  */
+  int  iStatus = 0; /* <--------- 3:finished reading                */
+  struct tm tmDate;
+
+  /*--- Read the string (integer part) -----------------------------*/
+  iStatus=0;
+  while (1) {
+    i=0;
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* Y     */
+    while ('0'<=pszTime[i] && pszTime[i]<='9' && i<10 ) {i++;} /* Y{,9} */
+    if (pszTime[i] != '-'               ) {break;} else {i++;} /* -     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* M     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* M     */
+    if (pszTime[i] != '-'               ) {break;} else {i++;} /* -     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* D     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* D     */
+    if (pszTime[i] != 'T'               ) {break;} else {i++;} /* T     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* h     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* h     */
+    if (pszTime[i] != ':'               ) {break;} else {i++;} /* :     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* m     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* m     */
+    if (pszTime[i] != ':'               ) {break;} else {i++;} /* :     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* s     */
+    if (pszTime[i]<'0' || '9'<pszTime[i]) {break;} else {i++;} /* s     */
+    switch (pszTime[i]) {
+      case ',' :
+      case '.' : iStatus = 1; break;
+      case 'Z' :
+      case '+' :
+      case '-' : iStatus = 2; break;
+      case 0   :
+      case ' ' :
+      case '\t': iStatus = 3; break;
+      default  : break;
+    }
+    break;
+  }
+  if (iStatus==0) {
+    if (giVerbose>0) {warning("%s: Invalid ISO 8601 string\n",pszTime);}
+    return 0;
+  }
+  memcpy(szDate, pszTime, i); szDate[i]=0;
+
+  /*--- Read the string (decimal part) -----------------------------*/
+  switch (iStatus) {
+    case 1 : i++;
+             j=i+9;
+             k=0;
+             for (; i<j; i++) {
+               c = pszTime[i];
+               if      ('0'<=c  && c<='9'          ) {szNsec[k]=c; k++;}
+               else if (c=='+'  || c=='-' || c=='Z') {iStatus=2; break;}
+               else if (c=='\t' || c==' ' || c==0  ) {iStatus=3; break;}
+               else                                  {
+                 if (giVerbose>0) {
+                   warning("%s: Invalid ISO 8601 string (decimal part)\n",
+                           pszTime                                        );
+                 }
+                 return 0;
+               }
+             }
+             if (i==j) {
+               c = pszTime[i];
+               if (c=='+'  || c=='-'        ) {iStatus=2; break;}
+               if (c=='\t' || c==' ' || c==0) {iStatus=3; break;}
+             }
+             for (; k<9; k++) {szNsec[k]='0';}
+             szNsec[9]=0;
+             break;
+    case 2 :
+    case 3 : strcpy(szNsec,"000000000");
+             break;
+  }
+
+  /*--- Read the string (timezone part) ----------------------------*/
+  if (iStatus==2) {
+    k=0;
+    while (k==0) {
+      iTZoffs  = 0;
+      if (pszTime[i]=='Z') {j=1; k=1; break;}                    /* Z    */
+      j = (pszTime[i]=='+') ? 1 : -1; i++;                       /* [+-] */
+      if (pszTime[i]<'0' || '9'<pszTime[i]) {break;}
+      iTZoffs += (pszTime[i]-'0')*36000; i++;                    /* h    */
+      if (pszTime[i]<'0' || '9'<pszTime[i]) {break;}
+      iTZoffs += (pszTime[i]-'0')* 3600; i++;                    /* h    */
+      if (pszTime[i]==':'                 ) {i++;  }             /* :    */
+      if (pszTime[i]<'0' || '9'<pszTime[i]) {break;}
+      iTZoffs += (pszTime[i]-'0')*  600; i++;                    /* m    */
+      if (pszTime[i]<'0' || '9'<pszTime[i]) {break;}
+      iTZoffs += (pszTime[i]-'0')*   60; i++;                    /* m    */
+      if (pszTime[i]!=' ' && pszTime[i]!='\t' && pszTime[i]!=0) {break;}
+      iTZoffs *= j;
+      k=1;
+    }
+    if (k==0) {
+      if (iStatus==0) {
+        warning("%s: Invalid ISO 8601 string (timezone part)\n",
+                pszTime                                         );
+        return 0;
+      }
+    }
+  } else          {
+    j=0;
+  }
+
+  /*--- Pack the time-string into the timespec structure -----------*/
+  memset(&tmDate, 0, sizeof(tmDate));
+  if (! strptime(szDate, "%Y-%m-%dT%H:%M:%S", &tmDate)) {
+    if (giVerbose>1) {
+      warning("Unexpect error at strptime() #1 in parse_iso8601time()\n");
+    }
+    return 0;
+  }
+  ptsTime->tv_sec  = mktime(&tmDate);
+  if (ptsTime->tv_sec == (time_t)-1) {
+    /* see the comment on the same check in parse_calendartime()     */
+    if (giVerbose>1) {warning("%s: Invalid ISO 8601 string\n", pszTime);}
+    return 0;
   }
   ptsTime->tv_nsec = atol(szNsec);
+  if (j!=0) {ptsTime->tv_sec = ptsTime->tv_sec + giTZoffs - iTZoffs;}
 
   return 1;
 }
@@ -1079,12 +1438,12 @@ int parse_unixtime(char* pszTime, struct timespec *ptsTime) {
  * [in] ptsTo     : Time until which this function wait
                     (given from the 1st field of a line, which not adjusted yet)
         ptsOffset : Offset for ptsTo (set NULL if unnecessary)      */
-void spend_my_spare_time(struct timespec *ptsTo, struct timespec *ptsOffset) {
+void spend_my_spare_time(tmsp *ptsTo, tmsp *ptsOffset) {
 
   /*--- Variables --------------------------------------------------*/
-  struct timespec tsTo  ;
-  struct timespec tsDiff;
-  struct timespec tsNow ;
+  tmsp tsTo  ;
+  tmsp tsDiff;
+  tmsp tsNow ;
 
   /*--- Calculate how long I wait ----------------------------------*/
   if (! ptsOffset) {
